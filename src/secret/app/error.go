@@ -24,17 +24,17 @@ func (c *Ctx) Error(err error) {
 }
 
 // NotFound response 404
-func (ctx *Ctx) NotFound() error {
+func (c *Ctx) NotFound() error {
 	e := ErrorStatusNotFound{
 		Message:  "not found",
-		Internal: fmt.Sprintf("url: %v not found", ctx.Req.URL.Path),
+		Internal: fmt.Sprintf("url: %v not found", c.Req.URL.Path),
 	}
 	log.Caller(2).WithError(e).Warn("not found")
 	return e
 }
 
 // InternalServerError response 500
-func (ctx *Ctx) InternalServerError(err error) error {
+func (c *Ctx) InternalServerError(err error) error {
 	e := ErrorInternalServerError{
 		Message:  "internal server error",
 		Internal: err.Error(),
@@ -44,7 +44,7 @@ func (ctx *Ctx) InternalServerError(err error) error {
 }
 
 // BadRequest response 400
-func (ctx *Ctx) BadRequest(err error) error {
+func (c *Ctx) BadRequest(err error) error {
 	log.Caller(2).WithError(err).Warn("bad request")
 	return err
 }
