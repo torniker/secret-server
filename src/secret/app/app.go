@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"secret/log"
 )
@@ -23,6 +26,8 @@ type App struct {
 	redis          Redis
 	Server         *http.Server
 	DefaultHandler HandlerFunc
+	Summery        map[string]*prometheus.SummaryVec
+	Counter        map[string]prometheus.Counter
 }
 
 var a App
@@ -30,9 +35,11 @@ var a App
 // New creates App instance and sets default handler function
 func New() *App {
 	a = App{
-		Env:    Development,
-		Server: new(http.Server),
-		redis:  NewRedis("localhost:6379", "", 0), // TODO: move redis configuration to .env
+		Env:     Development,
+		Server:  new(http.Server),
+		redis:   NewRedis("localhost:6379", "", 0), // TODO: move redis configuration to .env
+		Summery: make(map[string]*prometheus.SummaryVec),
+		Counter: make(map[string]prometheus.Counter),
 		DefaultHandler: func(c *Ctx) error {
 			return c.NotFound()
 		},
@@ -50,7 +57,29 @@ func (a *App) StartHTTP(address string) error {
 }
 
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	ctx := a.NewCtx(r, w)
+	defer func() {
+		log.Info("defer")
+		if ctx.Route == "" {
+			return
+		}
+		log.With("route", ctx.Route).Warn("route")
+		log.With("counter", a.Counter).Warn("counter")
+		if _, ok := a.Counter[ctx.Route]; ok {
+			log.With("r", ctx.Route).Warn("count")
+			a.Counter[ctx.Route].Inc()
+		}
+		if _, ok := a.Summery[ctx.Route]; ok {
+			log.With("r", ctx.Route).Warn("summery")
+			duration := time.Since(start)
+			a.Summery[ctx.Route].WithLabelValues("duration").Observe(duration.Seconds())
+			size, err := strconv.Atoi(w.Header().Get("Content-Length"))
+			if err == nil {
+				a.Summery[ctx.Route].WithLabelValues("size").Observe(float64(size))
+			}
+		}
+	}()
 	l := log.With("method", r.Method)
 	l.With("path", r.URL.Path)
 	l.With("query", r.URL.Query())
@@ -66,10 +95,11 @@ type HandlerFunc func(*Ctx) error
 
 // Ctx is struct where information for each request is stored
 type Ctx struct {
-	App  *App
-	Req  *http.Request
-	Res  http.ResponseWriter
-	Path *Path
+	App   *App
+	Req   *http.Request
+	Res   http.ResponseWriter
+	Path  *Path
+	Route string
 }
 
 // NewCtx returns pointer to Ctx
