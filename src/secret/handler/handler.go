@@ -3,7 +3,6 @@ package handler
 import (
 	"secret/app"
 	"secret/handler/request"
-	"secret/log"
 	"secret/model"
 	"secret/random"
 	"time"
@@ -63,7 +62,6 @@ func addSecret(c *app.Ctx) error {
 		ExpiresAt:      time.Now().Local().Add(params.ExpireAfter),
 		RemainingViews: params.ExpireAfterViews,
 	}
-	log.With("params", params).Info("params")
 	err = c.App.Redis(func(rc *redis.Client) error {
 		return rc.Set(hash, secret, params.ExpireAfter).Err()
 	})
@@ -80,14 +78,12 @@ func getSecretByHash(c *app.Ctx) error {
 		return c.NotFound()
 	}
 	hash := c.Path.Current()
-	log.With("hash", hash).Info("hash")
 	var secret model.Secret
 	err := c.App.Redis(func(rc *redis.Client) error {
 		data, err := rc.Get(hash).Bytes()
 		if err != nil {
 			return c.NotFound()
 		}
-		log.With("data", string(data)).Warn("data")
 		err = secret.UnmarshalBinary(data)
 		if err != nil {
 			return err
