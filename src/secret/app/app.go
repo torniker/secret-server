@@ -64,14 +64,10 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ctx.Route == "" {
 			return
 		}
-		log.With("route", ctx.Route).Warn("route")
-		log.With("counter", a.Counter).Warn("counter")
 		if _, ok := a.Counter[ctx.Route]; ok {
-			log.With("r", ctx.Route).Warn("count")
 			a.Counter[ctx.Route].Inc()
 		}
 		if _, ok := a.Summery[ctx.Route]; ok {
-			log.With("r", ctx.Route).Warn("summery")
 			duration := time.Since(start)
 			a.Summery[ctx.Route].WithLabelValues("duration").Observe(duration.Seconds())
 			size, err := strconv.Atoi(w.Header().Get("Content-Length"))

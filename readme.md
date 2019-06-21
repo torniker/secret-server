@@ -31,7 +31,11 @@ It is totaly OK to ask if something is not clear.
 * Clone the repo
 * cd into the dir
 * Run: `export GOPATH=${pwd}`
+* Run: `go get github.com/prometheus/client_golang/prometheus`
+* Run: `go get github.com/prometheus/client_golang/prometheus/promauto`
+* Run: `go get github.com/prometheus/client_golang/prometheus/promhttp`
+* Run: `cd src/secret`
 * Run: `go get ./...`
-* Run: `go build secret`
+* Run: `cd ../../`
 * Run: `go install secret`
 * Run: `./bin/secret`
